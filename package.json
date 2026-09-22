@@ -1,0 +1,14 @@
+{
+  "name": "vane-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "pnpm -r test",
+    "build": "pnpm -r build"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

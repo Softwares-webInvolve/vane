@@ -1,0 +1,119 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>prototype gate 1 — grid track morph</title>
+<style>
+  body { font: 14px system-ui; margin: 20px; }
+
+  /* ── Candidate A: 1fr → 0fr tracks inside a fit-content container ────────
+     The plan's preferred technique. `fr` resolves against available space,
+     and a fit-content container has no definite available space — so this
+     may degenerate to auto sizing. That is exactly what we are testing. */
+  .a {
+    display: grid;
+    grid-template-columns: 1fr 0fr;
+    width: fit-content;
+    transition: grid-template-columns 400ms linear;
+    overflow: hidden;
+    border: 1px solid #999;
+  }
+  .a.compact { grid-template-columns: 0fr 1fr; }
+
+  /* ── Candidate B: same, but the container is given a definite inline size
+     via max-width so the fr units have something to resolve against. */
+  .b {
+    display: grid;
+    grid-template-columns: 1fr 0fr;
+    width: fit-content;
+    max-width: 100%;
+    transition: grid-template-columns 400ms linear;
+    overflow: hidden;
+    border: 1px solid #999;
+  }
+  .b.compact { grid-template-columns: 0fr 1fr; }
+
+  /* ── Candidate C: the documented fallback — drive a concrete width from a
+     custom property. Guaranteed to work everywhere; costs one measurement. */
+  .c {
+    width: var(--w, 300px);
+    transition: width 400ms linear;
+    overflow: hidden;
+    border: 1px solid #999;
+    white-space: nowrap;
+  }
+
+  /* ── Candidate D: interpolate-size, the technique we are replacing.
+     Chromium-only; included so the test records what the others actually do. */
+  .d {
+    width: auto;
+    interpolate-size: allow-keywords;
+    transition: width 400ms linear;
+    overflow: hidden;
+    border: 1px solid #999;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  .d.compact { width: 60px; }
+
+  .cell { overflow: hidden; min-width: 0; white-space: nowrap; }
+  .full { background: #cfe8ff; }
+  .compactcell { background: #ffe0cf; }
+  section { margin-bottom: 16px; }
+</style>
+
+<section>
+  <p>A — 1fr/0fr, fit-content</p>
+  <div class="a" id="a">
+    <div class="cell full">Home · Services · Products · Our work · Insights</div>
+    <div class="cell compactcell">Company profile</div>
+  </div>
+</section>
+
+<section>
+  <p>B — 1fr/0fr, fit-content + max-width</p>
+  <div class="b" id="b">
+    <div class="cell full">Home · Services · Products · Our work · Insights</div>
+    <div class="cell compactcell">Company profile</div>
+  </div>
+</section>
+
+<section>
+  <p>C — measured width custom property (fallback)</p>
+  <div class="c" id="c">Home · Services · Products · Our work · Insights</div>
+</section>
+
+<section>
+  <p>D — interpolate-size (Chromium-only baseline)</p>
+  <div class="d" id="d">Home · Services · Products · Our work · Insights</div>
+</section>
+
+<script>
+  window.__support = {
+    interpolateSize: CSS.supports('interpolate-size', 'allow-keywords'),
+    animationTimeline: CSS.supports('animation-timeline', 'scroll()'),
+    offsetPath: CSS.supports('offset-path', 'ellipse(10px 10px at 50% 50%)'),
+    transitionGridTemplate: CSS.supports('transition-property', 'grid-template-columns'),
+  };
+
+  /** Sample an element's width every animation frame for `ms`. */
+  window.__sample = (id, ms) => new Promise((resolve) => {
+    const el = document.getElementById(id);
+    const widths = [];
+    const t0 = performance.now();
+    const tick = () => {
+      widths.push(Math.round(el.getBoundingClientRect().width * 100) / 100);
+      if (performance.now() - t0 < ms) requestAnimationFrame(tick);
+      else resolve(widths);
+    };
+    requestAnimationFrame(tick);
+  });
+
+  window.__go = (id) => {
+    const el = document.getElementById(id);
+    if (id === 'c') {
+      // Simulate the measured-width path: read both layouts, then drive.
+      el.style.setProperty('--w', '120px');
+    } else {
+      el.classList.add('compact');
+    }
+  };
+</script>

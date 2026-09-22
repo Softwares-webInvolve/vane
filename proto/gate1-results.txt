@@ -1,0 +1,18 @@
+=== CHROMIUM ===
+  support: interpolateSize=true  animationTimeline=true  offsetPath=true  transitionGridTemplate=true
+=== WEBKIT ===
+  support: interpolateSize=false  animationTimeline=true  offsetPath=true  transitionGridTemplate=true
+=== FIREFOX ===
+  support: interpolateSize=false  animationTimeline=false  offsetPath=true  transitionGridTemplate=true
+  a:  309.34 →  107.94  steps=  3 inter=  1 mono=Y  *** SNAPPED ***
+  b:  309.34 →  107.94  steps=  3 inter=  1 mono=Y  *** SNAPPED ***
+  c:     302 →     122  steps= 25 inter= 23 mono=Y  TWEENED
+  d:  309.34 →      62  steps= 26 inter= 24 mono=Y  TWEENED
+  a:  309.34 →  309.34  steps=  2 inter=  1 mono=Y  *** SNAPPED ***
+  b:  309.34 →  309.34  steps=  2 inter=  1 mono=Y  *** SNAPPED ***
+  c:     302 →     122  steps= 25 inter= 23 mono=Y  TWEENED
+  d:      62 →      62  steps=  1 inter=  0 mono=Y  *** SNAPPED ***
+  a:  310.67 →  310.67  steps=  1 inter=  0 mono=Y  *** SNAPPED ***
+  b:  310.67 →  310.67  steps=  1 inter=  0 mono=Y  *** SNAPPED ***
+  c:     302 →     122  steps= 25 inter= 23 mono=Y  TWEENED
+  d:      62 →      62  steps=  1 inter=  0 mono=Y  *** SNAPPED ***

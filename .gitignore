@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.turbo/
+.next/
+coverage/
+*.log
+.DS_Store
+test-results/
+playwright-report/
