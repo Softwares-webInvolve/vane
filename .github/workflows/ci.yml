@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Type-check against both supported React majors. `inert` serialises
+  # differently between React 18 and 19 (React 18 wants `inert=""`, React
+  # 19 treats it as a real boolean) — a regression here must not slip by
+  # under a single pinned version.
+  typecheck:
+    name: typecheck (react ${{ matrix.react }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        react: ["18", "19"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Pin react@${{ matrix.react }} for this job
+        run: pnpm --filter @webinvolve/vane add -D react@${{ matrix.react }} @types/react@${{ matrix.react }} --no-save
+
+      - run: pnpm --filter @webinvolve/vane exec tsc --noEmit
+
+  test-build-package:
+    name: test, build & package checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @webinvolve/vane test
+
+      - run: pnpm --filter @webinvolve/vane build
+
+      - name: publint
+        run: pnpm --filter @webinvolve/vane exec publint
+
+      - name: attw --pack
+        run: pnpm --filter @webinvolve/vane exec attw --pack
+
+      - name: size-limit
+        run: pnpm --filter @webinvolve/vane exec size-limit
+
+      - name: check-use-client
+        run: node scripts/check-use-client.mjs
+
+      - name: check-data-contract
+        run: node scripts/check-data-contract.mjs
+
+  smoke:
+    name: smoke (pnpm pack -> Next.js app)
+    runs-on: ubuntu-latest
+    needs: test-build-package
+    # The smoke test needs a built dist and network access to install
+    # next/react into a throwaway app. It is designed to skip gracefully
+    # (exit 0) rather than fail the pipeline when the network is
+    # unavailable — see apps/smoke/run.mjs.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @webinvolve/vane build
+
+      - run: node apps/smoke/run.mjs

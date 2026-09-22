@@ -2,13 +2,22 @@
   "name": "vane-monorepo",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.33.1",
   "scripts": {
+    "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "build": "pnpm -r build"
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "check": "pnpm run typecheck && pnpm run test && pnpm run build && pnpm --filter @webinvolve/vane exec publint && pnpm --filter @webinvolve/vane exec attw --pack && pnpm --filter @webinvolve/vane exec size-limit && node scripts/check-use-client.mjs && node scripts/check-data-contract.mjs"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "globals": "^17.12.0",
     "playwright": "^1.63.0",
     "typescript": "^5.9.2",
+    "typescript-eslint": "^8.70.1",
     "vitest": "^3.2.4"
   }
 }
