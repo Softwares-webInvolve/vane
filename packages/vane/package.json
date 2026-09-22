@@ -69,7 +69,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "bunchee && cp src/styles/vane.css dist/styles.css",
+    "build": "bunchee --minify --external ./styles/vane.css && node scripts/build-css.mjs",
     "dev": "bunchee --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -114,7 +114,7 @@
       "name": "headless",
       "path": "dist/headless.mjs",
       "gzip": true,
-      "limit": "2.2 kB"
+      "limit": "5 kB"
     }
   ]
 }

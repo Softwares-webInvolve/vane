@@ -7,13 +7,16 @@
 // diffs it against the allowlist below. It is intentionally simple: a
 // regex over dist plus a Set difference.
 //
-// The allowlist reflects the attributes implemented in src/ as of writing
-// (data-vane, data-vane-label, data-vane-ignore, data-vane-focus-anchor,
+// The allowlist reflects the attributes implemented in src/ (data-vane,
+// data-vane-label, data-vane-ignore, data-vane-focus-anchor,
 // data-vane-region — see src/core/observers.ts, src/core/focus.ts,
-// src/core/heading-index.ts, src/react/use-nav-morph.ts) plus every
-// data-vane* literal named in the plan. Note: `data-state` and
-// `data-scrolled` are intentionally out of scope — they are not
-// `vane`-namespaced and this contract only covers `data-vane*`.
+// src/core/heading-index.ts, src/react/use-nav-morph.ts) plus the
+// components layer's own namespaced elements (data-vane-viewport,
+// data-vane-toggle, data-vane-panel — see src/components/*.tsx). The full,
+// authoritative table (including non-`data-vane*` attributes like
+// `data-state`/`data-scrolled`/`data-direction`, which are intentionally
+// out of scope here — this contract only covers `data-vane*`) lives in
+// docs/data-contract.md; keep the two in sync.
 //
 // Extend this list deliberately, in the same commit that introduces a new
 // attribute in src/ — that is the point of the check.
@@ -23,10 +26,13 @@ import path from 'node:path';
 
 const ALLOWED_ATTRIBUTES = new Set([
 	'data-vane',
+	'data-vane-viewport',
 	'data-vane-label',
 	'data-vane-ignore',
 	'data-vane-focus-anchor',
 	'data-vane-region',
+	'data-vane-toggle',
+	'data-vane-panel',
 ]);
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));

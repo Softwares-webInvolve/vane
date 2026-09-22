@@ -46,7 +46,12 @@ if (jsFiles.length === 0) {
 	process.exit(1);
 }
 
-const DIRECTIVE_RE = /^(['"])use client\1;?$/;
+// Matched against the START of the file, not a whole first line: a minified
+// build (bunchee --minify) collapses the entire module onto one line, so
+// "first line" and "first statement" stop being the same thing. The
+// directive itself must still be the first statement, which is what
+// actually matters to a bundler/runtime.
+const DIRECTIVE_RE = /^(['"])use client\1;?/;
 const missing = [];
 const unreadable = [];
 
@@ -59,8 +64,7 @@ for (const rel of jsFiles) {
 		unreadable.push({ rel, message: err.message });
 		continue;
 	}
-	const firstLine = contents.split('\n')[0].trim();
-	if (!DIRECTIVE_RE.test(firstLine)) {
+	if (!DIRECTIVE_RE.test(contents.trimStart())) {
 		missing.push(rel);
 	}
 }

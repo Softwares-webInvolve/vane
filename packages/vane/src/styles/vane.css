@@ -1,0 +1,282 @@
+/*
+ * @webinvolve/vane — theme tokens.
+ * Every one of these is used below and safe to override from a consumer
+ * stylesheet loaded after this one (plain custom properties, no @layer so
+ * the cascade stays predictable for consumers who don't use layers either).
+ */
+:root {
+	--vane-bg: rgba(255, 255, 255, 0.72);
+	--vane-blur: 16px;
+	--vane-border: rgba(15, 15, 20, 0.08);
+	--vane-fg: #111114;
+	--vane-accent: #6d5efc;
+	--vane-radius: 999px;
+	--vane-radius-compact: 999px;
+	--vane-shadow: 0 1px 2px rgba(15, 15, 20, 0.06), 0 8px 24px rgba(15, 15, 20, 0.1);
+	--vane-duration: 320ms;
+	--vane-ease: cubic-bezier(0.22, 1, 0.36, 1);
+	--vane-pad-x: 1.25rem;
+	--vane-pad-y: 0.625rem;
+	--vane-gap: 0.75rem;
+	--vane-max-width: 64rem;
+	--vane-z: 50;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--vane-bg: rgba(20, 20, 24, 0.72);
+		--vane-border: rgba(255, 255, 255, 0.12);
+		--vane-fg: #f5f5f7;
+	}
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────
+ * 0.01ms, never `none` — with `none` no `transitionend` ever fires and a
+ * consumer (or test) awaiting it deadlocks. The `[data-reduced-motion]`
+ * override rules below are MORE specific than both the base rule and the
+ * media query (one extra attribute selector, regardless of source order),
+ * so the explicit prop always wins in both directions: `reducedMotion:
+ * 'always'` forces 0.01ms even with no OS preference, and `'never'` forces
+ * real motion even when the OS asks for less.
+ */
+@media (prefers-reduced-motion: reduce) {
+	[data-vane] {
+		--vane-duration: 0.01ms;
+	}
+}
+[data-vane][data-reduced-motion='true'] {
+	--vane-duration: 0.01ms;
+}
+[data-vane][data-reduced-motion='false'] {
+	--vane-duration: 320ms;
+}
+
+/* ── Viewport ────────────────────────────────────────────────────────────
+ * `pointer-events: none` so the empty space around the capsule never
+ * intercepts clicks; `<nav>` re-enables it. Width/height are the GATE1
+ * outcome (see proto/GATE1.md): `1fr -> 0fr` does not animate in a
+ * `fit-content` container in ANY engine, so instead of a CSS-only trick we
+ * transition between MEASURED lengths that `useNavMorph` publishes as
+ * `--vane-w`/`--vane-h` on this element.
+ */
+[data-vane-viewport] {
+	position: fixed;
+	top: 1rem;
+	left: 50%;
+	translate: -50% 0;
+	z-index: var(--vane-z);
+	pointer-events: none;
+	width: var(--vane-w, auto);
+	height: var(--vane-h, auto);
+	max-width: min(var(--vane-max-width), calc(100vw - 2rem));
+	transition:
+		width var(--vane-duration) var(--vane-ease),
+		height var(--vane-duration) var(--vane-ease);
+}
+
+/* ── Nav shell ───────────────────────────────────────────────────────────*/
+[data-vane] {
+	position: relative;
+	display: flex;
+	align-items: center;
+	width: 100%;
+	height: 100%;
+	pointer-events: auto;
+	background: var(--vane-bg);
+	-webkit-backdrop-filter: blur(var(--vane-blur));
+	backdrop-filter: blur(var(--vane-blur));
+	border: 1px solid var(--vane-border);
+	border-radius: var(--vane-radius);
+	color: var(--vane-fg);
+	transition:
+		border-radius var(--vane-duration) var(--vane-ease),
+		transform var(--vane-duration) var(--vane-ease);
+}
+
+[data-vane][data-state='compact'],
+[data-vane][data-state='hidden'] {
+	border-radius: var(--vane-radius-compact);
+}
+
+/* `collapseTo: 'hidden'` moves the nav off-canvas rather than unmounting or
+ * `display: none`-ing it — it must stay in the DOM and tabbable so the
+ * hidden -> compact focus promotion in useNavMorph has something to
+ * promote. The active region while hidden is `compact` (see the hook), so
+ * only `full` is hidden below. */
+[data-vane][data-state='hidden'] {
+	transform: translateY(-150%);
+}
+
+/* ── Elevation ramp ──────────────────────────────────────────────────────
+ * CSS owns this off the main thread via `animation-timeline: scroll()`
+ * (Chromium + WebKit; confirmed absent in Firefox by proto/GATE1.md). The
+ * `@supports not` fallback reuses `[data-scrolled]`, which costs zero extra
+ * JS because the direction scroll source already runs.
+ */
+@supports (animation-timeline: scroll()) {
+	[data-vane] {
+		animation: vane-elevate linear both;
+		animation-timeline: scroll(root block);
+		animation-range: 0 120px;
+	}
+}
+@keyframes vane-elevate {
+	from {
+		box-shadow: none;
+	}
+	to {
+		box-shadow: var(--vane-shadow);
+	}
+}
+@supports not (animation-timeline: scroll()) {
+	[data-vane] {
+		box-shadow: none;
+		transition:
+			border-radius var(--vane-duration) var(--vane-ease),
+			transform var(--vane-duration) var(--vane-ease),
+			box-shadow var(--vane-duration) var(--vane-ease);
+	}
+	[data-vane][data-scrolled] {
+		box-shadow: var(--vane-shadow);
+	}
+}
+
+/* ── Regions ─────────────────────────────────────────────────────────────
+ * Only the active region (per `data-state`) is displayed. `Vane.Full`/
+ * `Vane.Compact` are the sole two possible values of `data-vane-region`.
+ */
+[data-vane-region] {
+	display: flex;
+	align-items: center;
+	gap: var(--vane-gap);
+	padding: var(--vane-pad-y) var(--vane-pad-x);
+	white-space: nowrap;
+	width: 100%;
+}
+
+[data-vane][data-state='full'] [data-vane-region='compact'] {
+	display: none;
+}
+[data-vane][data-state='compact'] [data-vane-region='full'],
+[data-vane][data-state='hidden'] [data-vane-region='full'] {
+	display: none;
+}
+
+/* ── Label ───────────────────────────────────────────────────────────────*/
+[data-vane-label] {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-weight: 500;
+}
+
+/* ── Toggle ──────────────────────────────────────────────────────────────
+ * Visibility is CSS `display`, never a JS breakpoint — `display: none`
+ * correctly drops the button from the tab order; a JS-computed "isMobile"
+ * boolean does not (it is still `tabindex`-reachable when visually hidden).
+ * Consumers are expected to override this breakpoint; it is a default, not
+ * a mandate.
+ */
+[data-vane-toggle] {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: none;
+	padding: 0.5rem;
+	margin-inline-start: auto;
+	color: inherit;
+	cursor: pointer;
+	border-radius: 999px;
+}
+@media (max-width: 640px) {
+	[data-vane-toggle] {
+		display: inline-flex;
+	}
+}
+
+/* ── Panel ───────────────────────────────────────────────────────────────
+ * A SIBLING of `<nav>`, not a child (see components/panel.tsx for why) —
+ * positioned here against `[data-vane-viewport]`, its nearest positioned
+ * ancestor.
+ */
+[data-vane-panel] {
+	position: absolute;
+	top: calc(100% + 0.5rem);
+	/* Centered under the pill, not right-aligned: `[data-vane-viewport]` is
+	 * only as wide as the active region (see the GATE1 measured-width
+	 * morph above), so on a narrow screen a right-aligned panel anchors to
+	 * that narrow box's right edge and overflows off the left of the
+	 * viewport instead of the screen. */
+	left: 50%;
+	translate: -50% 0;
+	min-width: 12rem;
+	max-width: min(20rem, calc(100vw - 2rem));
+	background: var(--vane-bg);
+	-webkit-backdrop-filter: blur(var(--vane-blur));
+	backdrop-filter: blur(var(--vane-blur));
+	border: 1px solid var(--vane-border);
+	/* Deliberately NOT derived from --vane-radius(-compact) — those default
+	 * to 999px for the fully-rounded pill nav, and reusing that formula for
+	 * a rectangular dropdown produced a near-circular blob instead of
+	 * rounded corners. */
+	border-radius: 1rem;
+	box-shadow: var(--vane-shadow);
+	padding: var(--vane-pad-y) var(--vane-pad-x);
+	pointer-events: auto;
+	color: var(--vane-fg);
+}
+[data-vane-panel][data-state='closed'] {
+	display: none;
+}
+
+/* ── Progress hairline ───────────────────────────────────────────────────
+ * Pure CSS, no JS, guarded for Firefox (no scroll-driven animations —
+ * proto/GATE1.md) by dropping the bar entirely rather than reimplementing
+ * it with a scroll listener, which would undercut the "no JS" requirement.
+ */
+.vane-progress {
+	position: absolute;
+	inset-inline: 0;
+	bottom: 0;
+	height: 2px;
+	background: var(--vane-accent);
+	transform: scaleX(0);
+	transform-origin: left;
+	pointer-events: none;
+}
+@supports (animation-timeline: scroll()) {
+	.vane-progress {
+		animation: vane-progress linear both;
+		animation-timeline: scroll(root);
+	}
+}
+@supports not (animation-timeline: scroll()) {
+	.vane-progress {
+		display: none;
+	}
+}
+@keyframes vane-progress {
+	from {
+		transform: scaleX(0);
+	}
+	to {
+		transform: scaleX(1);
+	}
+}
+
+/* ── Focus rings ─────────────────────────────────────────────────────────*/
+[data-vane-toggle]:focus-visible,
+[data-vane] a:focus-visible {
+	outline: 2px solid var(--vane-accent);
+	outline-offset: 2px;
+}
+
+/* Links inside `<Vane>` regions that mark themselves as the current
+ * section. Consumers set `aria-current="location"` via
+ * `spy.getSectionLinkProps(id)`; this just styles it. `data-active` is
+ * documented as an alternative hook for consumers who use `data-*` instead
+ * of `aria-current` for styling. */
+[data-vane] a[aria-current='location'],
+[data-vane] a[data-active] {
+	color: var(--vane-accent);
+}
